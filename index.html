@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>תרגול אינטגרלים של פונקציות מעריכיות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap" rel="stylesheet">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+  svg: { fontCache: 'global' },
+  startup: { typeset: false }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" defer></script>
+<style>
+:root {
+  --board: #fbfcfc;
+  --page: #e9ecee;
+  --frame: #9aa1a8;
+  --ink: #1f3a68;
+  --text: #24292e;
+  --muted: #5f6870;
+  --green: #148f4a;
+  --red: #c23434;
+  --soft: #eef2f7;
+  --line: #d6dbe0;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --board: #1f2a2b;
+    --page: #151c1d;
+    --frame: #3d4a4c;
+    --ink: #9cc2ff;
+    --text: #e6ecec;
+    --muted: #9aa7a8;
+    --green: #4fd18a;
+    --red: #ff8a80;
+    --soft: #263435;
+    --line: #34423f;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --board: #1f2a2b; --page: #151c1d; --frame: #3d4a4c; --ink: #9cc2ff; --text: #e6ecec;
+  --muted: #9aa7a8; --green: #4fd18a; --red: #ff8a80; --soft: #263435; --line: #34423f;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text);
+  font-family: "Assistant", "Arial Hebrew", "Noto Sans Hebrew", Arial, sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+}
+.wrap { max-width: 760px; margin: 0 auto; padding: 20px 16px 40px; }
+h1 {
+  font-family: "Frank Ruhl Libre", "David", "Times New Roman", serif;
+  font-weight: 700;
+  font-size: 1.7rem;
+  line-height: 1.2;
+  margin: 4px 0 4px;
+  color: var(--ink);
+}
+.sub { color: var(--muted); margin: 0 0 16px; font-size: 1rem; }
+
+.strip { display: flex; flex-wrap: wrap; gap: 10px 14px; margin-bottom: 18px; }
+.group { display: flex; align-items: center; gap: 4px; }
+.group-label { font-weight: 700; color: var(--muted); font-size: .9rem; margin-left: 2px; }
+.dot {
+  width: 26px; height: 26px; border-radius: 6px;
+  border: 1.5px solid var(--line); background: var(--board);
+  color: var(--muted); font: 600 .75rem "Assistant", Arial, sans-serif;
+  cursor: pointer; padding: 0;
+}
+.dot.seen { border-color: var(--ink); color: var(--ink); }
+.dot.current { background: var(--ink); border-color: var(--ink); color: var(--board); }
+
+.board {
+  background: var(--board);
+  border: 10px solid var(--frame);
+  border-radius: 6px;
+  padding: 22px 22px 18px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+.num {
+  position: relative; width: 66px; height: 50px; flex: none;
+  display: grid; place-items: center;
+  font: 700 1.4rem "Frank Ruhl Libre", serif; color: var(--ink);
+}
+.num svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.part { font-family: "Frank Ruhl Libre", serif; font-weight: 700; font-size: 1.15rem; color: var(--ink); line-height: 1.3; }
+.hint { color: var(--muted); font-size: .98rem; }
+.q { direction: ltr; text-align: center; font-size: 1.35rem; color: var(--ink); padding: 18px 0 14px; overflow-x: auto; }
+.q.text { direction: rtl; text-align: right; font-size: 1.15rem; color: var(--text); }
+
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+button.act {
+  font: 700 1rem "Assistant", Arial, sans-serif;
+  border-radius: 999px; padding: 9px 18px; cursor: pointer;
+  border: 2px solid var(--green); background: transparent; color: var(--green);
+}
+button.act.full { border-color: var(--ink); color: var(--ink); }
+button.act[aria-pressed="true"] { background: var(--green); color: var(--board); }
+button.act.full[aria-pressed="true"] { background: var(--ink); color: var(--board); }
+
+.panel { margin-top: 16px; border-top: 2px dashed var(--line); padding-top: 12px; }
+.panel h2 { font-size: 1rem; margin: 0 0 6px; color: var(--muted); font-weight: 700; }
+.final { direction: ltr; text-align: center; font-size: 1.3rem; color: var(--red); overflow-x: auto; }
+.final.text { direction: rtl; text-align: right; font-size: 1.1rem; }
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; }
+.steps li { counter-increment: s; position: relative; padding: 6px 34px 6px 0; border-bottom: 1px solid var(--soft); }
+.steps li::before {
+  content: counter(s); position: absolute; right: 0; top: 9px;
+  width: 22px; height: 22px; border-radius: 50%; background: var(--soft); color: var(--ink);
+  font: 700 .8rem "Assistant", Arial, sans-serif; display: grid; place-items: center;
+}
+.steps .m { direction: ltr; text-align: center; overflow-x: auto; color: var(--ink); }
+.steps .m.ans { color: var(--red); }
+
+.nav { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; gap: 10px; }
+.nav button {
+  font: 700 1rem "Assistant", Arial, sans-serif; padding: 10px 20px; border-radius: 8px;
+  border: 0; background: var(--ink); color: var(--board); cursor: pointer;
+}
+.nav button:disabled { opacity: .35; cursor: default; }
+.count { color: var(--muted); font-weight: 600; }
+button:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+.loading { color: var(--muted); text-align: center; padding: 30px 0; }
+@media (max-width: 520px) {
+  .wrap { padding: 14px 10px 30px; }
+  .board { border-width: 7px; padding: 16px 14px; }
+  .q { font-size: 1.15rem; }
+  h1 { font-size: 1.4rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .panel { animation: show .25s ease-out; }
+  @keyframes show { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>תרגול אינטגרלים של פונקציות מעריכיות</h1>
+  <p class="sub">35 תרגילים לפי הכללים מהלוח. פתרו במחברת, ואז בדקו תשובה סופית או פתרון מלא.</p>
+  <nav class="strip" id="strip" aria-label="מעבר לתרגיל"></nav>
+  <main class="board" id="board"><div class="loading">טוען את התרגילים…</div></main>
+  <div class="nav">
+    <button id="prev" type="button">הקודם</button>
+    <span class="count" id="count"></span>
+    <button id="next" type="button">הבא</button>
+  </div>
+</div>
+<script>
+const R = String.raw;
+const PARTS = {
+  'א': { name: 'חלק א – e בחזקת ביטוי לינארי', rule: R`\int e^{mx+b}\,dx=\frac{e^{mx+b}}{m}+c` },
+  'ב': { name: 'חלק ב – הכלל f′·e^f', rule: R`\int f'(x)\,e^{f(x)}\,dx=e^{f(x)}+c` },
+  'ג': { name: 'חלק ג – קודם מסדרים, אחר כך אינטגרל', rule: null },
+  'ד': { name: 'חלק ד – הכלל f′·f^n', rule: R`\int f'(x)\big(f(x)\big)^{n}dx=\frac{\big(f(x)\big)^{n+1}}{n+1}+c` },
+  'ה': { name: 'חלק ה – משולב ואתגר', rule: null }
+};
+// s: steps — ['t', text with inline \( \)] or ['m', display tex]
+const EX = [
+ {p:'א', q:R`\int e^{4x}\,dx`, a:R`\frac{e^{4x}}{4}+c`, s:[
+  ['t',R`זה הכלל \(e^{mx+b}\) עם \(m=4\).`],
+  ['m',R`\int e^{4x}\,dx=\frac{e^{4x}}{4}+c`]]},
+ {p:'א', q:R`\int e^{-x}\,dx`, a:R`-e^{-x}+c`, s:[
+  ['t',R`כאן \(m=-1\).`],
+  ['m',R`\int e^{-x}\,dx=\frac{e^{-x}}{-1}+c=-e^{-x}+c`]]},
+ {p:'א', q:R`\int 6e^{2x-1}\,dx`, a:R`3e^{2x-1}+c`, s:[
+  ['t',R`מוציאים את הקבוע 6 החוצה. כאן \(m=2\).`],
+  ['m',R`6\int e^{2x-1}\,dx=6\cdot\frac{e^{2x-1}}{2}+c=3e^{2x-1}+c`]]},
+ {p:'א', q:R`\int e^{5-3x}\,dx`, a:R`-\frac{e^{5-3x}}{3}+c`, s:[
+  ['t',R`המקדם של \(x\) הוא \(m=-3\).`],
+  ['m',R`\int e^{5-3x}\,dx=\frac{e^{5-3x}}{-3}+c=-\frac{e^{5-3x}}{3}+c`]]},
+ {p:'א', q:R`\int e^{\frac{x}{2}}\,dx`, a:R`2e^{\frac{x}{2}}+c`, s:[
+  ['t',R`\(\frac{x}{2}=\frac12x\), לכן \(m=\frac12\). חלוקה ב־\(\frac12\) היא כפל ב־2.`],
+  ['m',R`\int e^{\frac{x}{2}}\,dx=\frac{e^{\frac{x}{2}}}{\frac12}+c=2e^{\frac{x}{2}}+c`]]},
+ {p:'א', q:R`\int \left(e^{3x}+e^{-3x}\right)dx`, a:R`\frac{e^{3x}}{3}-\frac{e^{-3x}}{3}+c`, s:[
+  ['t',R`מבצעים אינטגרל לכל מחובר בנפרד: \(m=3\) ו־\(m=-3\).`],
+  ['m',R`=\frac{e^{3x}}{3}+\frac{e^{-3x}}{-3}+c=\frac{e^{3x}}{3}-\frac{e^{-3x}}{3}+c`]]},
+ {p:'א', q:R`\int \frac{1}{e^{4x}}\,dx`, a:R`-\frac{e^{-4x}}{4}+c`, s:[
+  ['t',R`כותבים כחזקה שלילית: \(\frac{1}{e^{4x}}=e^{-4x}\).`],
+  ['m',R`\int e^{-4x}\,dx=\frac{e^{-4x}}{-4}+c=-\frac{e^{-4x}}{4}+c`]]},
+ {p:'א', q:R`\int \frac{2}{e^{x+1}}\,dx`, a:R`-2e^{-x-1}+c`, s:[
+  ['t',R`\(\frac{2}{e^{x+1}}=2e^{-(x+1)}=2e^{-x-1}\), וכאן \(m=-1\).`],
+  ['m',R`2\int e^{-x-1}\,dx=2\cdot\frac{e^{-x-1}}{-1}+c=-2e^{-x-1}+c`]]},
+
+ {p:'ב', q:R`\int 2x\,e^{x^{2}}\,dx`, a:R`e^{x^{2}}+c`, s:[
+  ['t',R`\(f(x)=x^2\) ולכן \(f'(x)=2x\) — בדיוק מה שמופיע לפני ה־e.`],
+  ['m',R`\int 2x\,e^{x^{2}}\,dx=e^{x^{2}}+c`]]},
+ {p:'ב', q:R`\int \left(6x^{2}-2\right)e^{2x^{3}-2x}\,dx`, a:R`e^{2x^{3}-2x}+c`, s:[
+  ['t',R`\(f(x)=2x^3-2x\) ולכן \(f'(x)=6x^2-2\).`],
+  ['m',R`\int f'\,e^{f}\,dx=e^{2x^{3}-2x}+c`]]},
+ {p:'ב', q:R`\int \frac{e^{\sqrt{x}}}{\sqrt{x}}\,dx`, a:R`2e^{\sqrt{x}}+c`, s:[
+  ['t',R`\(f(x)=\sqrt{x}\) ולכן \(f'(x)=\frac{1}{2\sqrt{x}}\). חסר 2 במכנה, אז משלימים: \(\frac{1}{\sqrt x}=2\cdot\frac{1}{2\sqrt x}\).`],
+  ['m',R`2\int \frac{1}{2\sqrt{x}}\,e^{\sqrt{x}}\,dx=2e^{\sqrt{x}}+c`]]},
+ {p:'ב', q:R`\int x\,e^{x^{2}+1}\,dx`, a:R`\frac12e^{x^{2}+1}+c`, s:[
+  ['t',R`\(f(x)=x^2+1\) ולכן \(f'(x)=2x\). משלימים: \(x=\frac12\cdot 2x\).`],
+  ['m',R`\frac12\int 2x\,e^{x^{2}+1}\,dx=\frac12e^{x^{2}+1}+c`]]},
+ {p:'ב', q:R`\int \left(x^{2}+1\right)e^{x^{3}+3x}\,dx`, a:R`\frac13e^{x^{3}+3x}+c`, s:[
+  ['t',R`\(f(x)=x^3+3x\) ולכן \(f'(x)=3x^2+3=3(x^2+1)\). משלימים: \(x^2+1=\frac13(3x^2+3)\).`],
+  ['m',R`\frac13\int \left(3x^{2}+3\right)e^{x^{3}+3x}\,dx=\frac13e^{x^{3}+3x}+c`]]},
+ {p:'ב', q:R`\int -\frac{1}{x^{2}}\,e^{\frac{1}{x}}\,dx`, a:R`e^{\frac1x}+c`, s:[
+  ['t',R`\(f(x)=\frac1x=x^{-1}\) ולכן \(f'(x)=-x^{-2}=-\frac{1}{x^2}\) — בדיוק מה שמופיע.`],
+  ['m',R`\int -\frac{1}{x^{2}}\,e^{\frac{1}{x}}\,dx=e^{\frac1x}+c`]]},
+ {p:'ב', q:R`\int (2x+3)\,e^{x^{2}+3x}\,dx`, a:R`e^{x^{2}+3x}+c`, s:[
+  ['t',R`\(f(x)=x^2+3x\) ולכן \(f'(x)=2x+3\).`],
+  ['m',R`\int (2x+3)\,e^{x^{2}+3x}\,dx=e^{x^{2}+3x}+c`]]},
+ {p:'ב', q:R`\int \frac{e^{\frac{1}{x}}}{x^{2}}\,dx`, a:R`-e^{\frac1x}+c`, s:[
+  ['t',R`\(f(x)=\frac1x\), \(f'(x)=-\frac1{x^2}\). חסר סימן מינוס, אז משלימים: \(\frac1{x^2}=-\left(-\frac1{x^2}\right)\).`],
+  ['m',R`-\int -\frac{1}{x^{2}}\,e^{\frac1x}\,dx=-e^{\frac1x}+c`]]},
+
+ {p:'ג', q:R`\int \frac{e^{2x}+1}{e^{x}}\,dx`, a:R`e^{x}-e^{-x}+c`, s:[
+  ['t',R`מפצלים את השבר לשני שברים.`],
+  ['m',R`\frac{e^{2x}}{e^{x}}+\frac{1}{e^{x}}=e^{x}+e^{-x}`],
+  ['m',R`\int\left(e^{x}+e^{-x}\right)dx=e^{x}+\frac{e^{-x}}{-1}+c=e^{x}-e^{-x}+c`]]},
+ {p:'ג', q:R`\int \frac{e^{3x}-2e^{x}}{e^{2x}}\,dx`, a:R`e^{x}+2e^{-x}+c`, s:[
+  ['t',R`מפצלים ומחסרים חזקות.`],
+  ['m',R`\frac{e^{3x}}{e^{2x}}-\frac{2e^{x}}{e^{2x}}=e^{x}-2e^{-x}`],
+  ['m',R`\int\left(e^{x}-2e^{-x}\right)dx=e^{x}-2\cdot\frac{e^{-x}}{-1}+c=e^{x}+2e^{-x}+c`]]},
+ {p:'ג', q:R`\int \left(e^{x}+e^{-x}\right)^{2}dx`, a:R`\frac{e^{2x}}{2}+2x-\frac{e^{-2x}}{2}+c`, s:[
+  ['t',R`פותחים לפי נוסחת הכפל המקוצר. שימו לב: \(e^{x}\cdot e^{-x}=e^0=1\).`],
+  ['m',R`\left(e^{x}+e^{-x}\right)^{2}=e^{2x}+2e^{x}e^{-x}+e^{-2x}=e^{2x}+2+e^{-2x}`],
+  ['m',R`\int\left(e^{2x}+2+e^{-2x}\right)dx=\frac{e^{2x}}{2}+2x-\frac{e^{-2x}}{2}+c`]]},
+ {p:'ג', q:R`\int \left(e^{2x}-1\right)^{2}dx`, a:R`\frac{e^{4x}}{4}-e^{2x}+x+c`, s:[
+  ['t',R`פותחים סוגריים.`],
+  ['m',R`\left(e^{2x}-1\right)^{2}=e^{4x}-2e^{2x}+1`],
+  ['m',R`\int\left(e^{4x}-2e^{2x}+1\right)dx=\frac{e^{4x}}{4}-2\cdot\frac{e^{2x}}{2}+x+c=\frac{e^{4x}}{4}-e^{2x}+x+c`]]},
+ {p:'ג', q:R`\int e^{x}\left(e^{-x}+e^{2x}\right)dx`, a:R`x+\frac{e^{3x}}{3}+c`, s:[
+  ['t',R`פותחים סוגריים ומחברים חזקות.`],
+  ['m',R`e^{x}\cdot e^{-x}+e^{x}\cdot e^{2x}=1+e^{3x}`],
+  ['m',R`\int\left(1+e^{3x}\right)dx=x+\frac{e^{3x}}{3}+c`]]},
+ {p:'ג', q:R`\int \frac{5+e^{2x}}{e^{2x}}\,dx`, a:R`x-\frac52e^{-2x}+c`, s:[
+  ['t',R`מפצלים את השבר.`],
+  ['m',R`\frac{5}{e^{2x}}+\frac{e^{2x}}{e^{2x}}=5e^{-2x}+1`],
+  ['m',R`\int\left(5e^{-2x}+1\right)dx=5\cdot\frac{e^{-2x}}{-2}+x+c=x-\frac52e^{-2x}+c`]]},
+
+ {p:'ד', q:R`\int e^{x}\left(e^{x}+1\right)^{3}dx`, a:R`\frac{\left(e^{x}+1\right)^{4}}{4}+c`, s:[
+  ['t',R`\(f(x)=e^x+1\), \(f'(x)=e^x\), \(n=3\).`],
+  ['m',R`\int f'\cdot f^{3}\,dx=\frac{\left(e^{x}+1\right)^{4}}{4}+c`]]},
+ {p:'ד', q:R`\int e^{x}\left(e^{x}-5\right)^{2}dx`, a:R`\frac{\left(e^{x}-5\right)^{3}}{3}+c`, s:[
+  ['t',R`\(f(x)=e^x-5\), \(f'(x)=e^x\), \(n=2\).`],
+  ['m',R`\int f'\cdot f^{2}\,dx=\frac{\left(e^{x}-5\right)^{3}}{3}+c`]]},
+ {p:'ד', q:R`\int \frac{e^{x}}{\left(e^{x}+2\right)^{3}}\,dx`, a:R`-\frac{1}{2\left(e^{x}+2\right)^{2}}+c`, s:[
+  ['t',R`מעבירים את המכנה לחזקה שלילית: \(f(x)=e^x+2\), \(f'(x)=e^x\), \(n=-3\).`],
+  ['m',R`\int e^{x}\left(e^{x}+2\right)^{-3}dx=\frac{\left(e^{x}+2\right)^{-2}}{-2}+c=-\frac{1}{2\left(e^{x}+2\right)^{2}}+c`]]},
+ {p:'ד', q:R`\int e^{x}\sqrt{e^{x}+4}\,dx`, a:R`\frac23\left(e^{x}+4\right)^{\frac32}+c`, s:[
+  ['t',R`שורש הוא חזקה \(\frac12\): \(f(x)=e^x+4\), \(f'(x)=e^x\), \(n=\frac12\).`],
+  ['m',R`\int e^{x}\left(e^{x}+4\right)^{\frac12}dx=\frac{\left(e^{x}+4\right)^{\frac32}}{\frac32}+c=\frac23\left(e^{x}+4\right)^{\frac32}+c`]]},
+ {p:'ד', q:R`\int e^{2x}\left(e^{2x}+1\right)^{4}dx`, a:R`\frac{\left(e^{2x}+1\right)^{5}}{10}+c`, s:[
+  ['t',R`\(f(x)=e^{2x}+1\) ולכן \(f'(x)=2e^{2x}\). משלימים: \(e^{2x}=\frac12\cdot 2e^{2x}\).`],
+  ['m',R`\frac12\int 2e^{2x}\left(e^{2x}+1\right)^{4}dx=\frac12\cdot\frac{\left(e^{2x}+1\right)^{5}}{5}+c=\frac{\left(e^{2x}+1\right)^{5}}{10}+c`]]},
+ {p:'ד', q:R`\int e^{-x}\left(e^{-x}+3\right)^{2}dx`, a:R`-\frac{\left(e^{-x}+3\right)^{3}}{3}+c`, s:[
+  ['t',R`\(f(x)=e^{-x}+3\) ולכן \(f'(x)=-e^{-x}\). חסר מינוס, אז משלימים: \(e^{-x}=-\left(-e^{-x}\right)\).`],
+  ['m',R`-\int \left(-e^{-x}\right)\left(e^{-x}+3\right)^{2}dx=-\frac{\left(e^{-x}+3\right)^{3}}{3}+c`]]},
+ {p:'ד', q:R`\int \frac{3e^{3x}}{\left(e^{3x}+1\right)^{2}}\,dx`, a:R`-\frac{1}{e^{3x}+1}+c`, s:[
+  ['t',R`\(f(x)=e^{3x}+1\), \(f'(x)=3e^{3x}\), ובחזקה שלילית \(n=-2\).`],
+  ['m',R`\int 3e^{3x}\left(e^{3x}+1\right)^{-2}dx=\frac{\left(e^{3x}+1\right)^{-1}}{-1}+c=-\frac{1}{e^{3x}+1}+c`]]},
+
+ {p:'ה', q:R`\int e^{x}\cdot e^{e^{x}}\,dx`, a:R`e^{e^{x}}+c`, s:[
+  ['t',R`זה הכלל \(f'\cdot e^{f}\) עם \(f(x)=e^x\) ו־\(f'(x)=e^x\).`],
+  ['m',R`\int e^{x}\cdot e^{e^{x}}\,dx=e^{e^{x}}+c`]]},
+ {p:'ה', q:R`\int \left(e^{x}+3\right)^{2}dx`, a:R`\frac{e^{2x}}{2}+6e^{x}+9x+c`, s:[
+  ['t',R`זה לא \(f'\cdot f^n\): חסר הגורם \(e^x\) מחוץ לסוגריים. לכן פותחים סוגריים.`],
+  ['m',R`\left(e^{x}+3\right)^{2}=e^{2x}+6e^{x}+9`],
+  ['m',R`\int\left(e^{2x}+6e^{x}+9\right)dx=\frac{e^{2x}}{2}+6e^{x}+9x+c`]]},
+ {p:'ה', q:R`\int \left(e^{x}-e^{-x}\right)\left(e^{x}+e^{-x}\right)^{4}dx`, a:R`\frac{\left(e^{x}+e^{-x}\right)^{5}}{5}+c`, s:[
+  ['t',R`\(f(x)=e^x+e^{-x}\) ולכן \(f'(x)=e^x-e^{-x}\) — בדיוק הסוגריים הראשונים. \(n=4\).`],
+  ['m',R`\int f'\cdot f^{4}\,dx=\frac{\left(e^{x}+e^{-x}\right)^{5}}{5}+c`]]},
+ {p:'ה', q:R`\int \left(e^{x}+e^{-x}\right)e^{\,e^{x}-e^{-x}}\,dx`, a:R`e^{\,e^{x}-e^{-x}}+c`, s:[
+  ['t',R`\(f(x)=e^x-e^{-x}\) ולכן \(f'(x)=e^x+e^{-x}\). זה הכלל \(f'\cdot e^{f}\).`],
+  ['m',R`\int f'\,e^{f}\,dx=e^{\,e^{x}-e^{-x}}+c`]]},
+ {p:'ה', text:true,
+  q:R`נתון \(f'(x)=2e^{2x}-e^{-x}\) ו־\(f(0)=3\). מצאו את \(f(x)\).`,
+  a:R`\(f(x)=e^{2x}+e^{-x}+1\)`, s:[
+  ['t',R`מוצאים פונקציה קדומה של \(f'\).`],
+  ['m',R`f(x)=\int\left(2e^{2x}-e^{-x}\right)dx=2\cdot\frac{e^{2x}}{2}-\frac{e^{-x}}{-1}+c=e^{2x}+e^{-x}+c`],
+  ['t',R`מציבים \(x=0\) ומשתמשים בנתון \(f(0)=3\).`],
+  ['m',R`f(0)=1+1+c=3\ \Rightarrow\ c=1`],
+  ['m',R`f(x)=e^{2x}+e^{-x}+1`]]},
+ {p:'ה', text:true,
+  q:R`נתונה הפונקציה \(f(x)=1+ae^{-x}\), ונתון \(f'(0)=-2\).<br>א. מצאו את \(a\).<br>ב. מצאו את הפונקציה הקדומה \(F(x)\) של \(f\) שגרפה עובר בנקודה \((0,1)\).`,
+  a:R`א. \(a=2\)<br>ב. \(F(x)=x-2e^{-x}+3\)`, s:[
+  ['t',R`א. גוזרים: \(f'(x)=-ae^{-x}\).`],
+  ['m',R`f'(0)=-a=-2\ \Rightarrow\ a=2`],
+  ['t',R`ב. עכשיו \(f(x)=1+2e^{-x}\). מוצאים פונקציה קדומה.`],
+  ['m',R`F(x)=\int\left(1+2e^{-x}\right)dx=x+2\cdot\frac{e^{-x}}{-1}+c=x-2e^{-x}+c`],
+  ['t',R`הגרף עובר ב־\((0,1)\), כלומר \(F(0)=1\).`],
+  ['m',R`F(0)=0-2+c=1\ \Rightarrow\ c=3`],
+  ['m',R`F(x)=x-2e^{-x}+3`]]}
+];
+
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+};
+let idx = Math.min(Math.max(parseInt(store.get('int-idx') || '0',10) || 0, 0), EX.length-1);
+let seen = new Set();
+try { seen = new Set(JSON.parse(store.get('int-seen') || '[]')); } catch(e){}
+let showFinal = false, showFull = false;
+
+const board = document.getElementById('board');
+const strip = document.getElementById('strip');
+const prev = document.getElementById('prev');
+const next = document.getElementById('next');
+const count = document.getElementById('count');
+
+function buildStrip(){
+  strip.innerHTML = '';
+  Object.keys(PARTS).forEach(k => {
+    const g = document.createElement('div'); g.className = 'group';
+    const l = document.createElement('span'); l.className = 'group-label'; l.textContent = k + '׳';
+    g.appendChild(l);
+    EX.forEach((ex, i) => {
+      if (ex.p !== k) return;
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'dot'; b.textContent = i + 1;
+      b.setAttribute('aria-label', 'תרגיל ' + (i + 1));
+      b.addEventListener('click', () => go(i));
+      g.appendChild(b);
+    });
+    strip.appendChild(g);
+  });
+}
+function paintStrip(){
+  strip.querySelectorAll('.dot').forEach((d, i) => {
+    d.classList.toggle('current', i === idx);
+    d.classList.toggle('seen', seen.has(i));
+    d.setAttribute('aria-current', i === idx ? 'true' : 'false');
+  });
+}
+const ring = `<svg viewBox="0 0 66 50" aria-hidden="true"><path d="M8 27 C6 12 26 4 40 6 C56 8 63 18 60 29 C57 41 40 46 26 44 C13 42 5 35 9 22 C11 16 18 11 25 9" fill="none" stroke="var(--green)" stroke-width="3" stroke-linecap="round"/></svg>`;
+
+function render(){
+  const ex = EX[idx], part = PARTS[ex.p];
+  let h = `<div class="head"><div class="num">${ring}<span>${idx+1}</span></div>
+    <div><div class="part">${part.name}</div>
+    ${part.rule ? `<div class="hint" dir="ltr" style="text-align:right">\\(${part.rule}\\)</div>` : '<div class="hint">זהו איזה כלל מתאים לפני שמתחילים.</div>'}</div></div>`;
+  h += ex.text ? `<div class="q text">${ex.q}</div>` : `<div class="q">\\[${ex.q}\\]</div>`;
+  h += `<div class="actions">
+    <button class="act" id="bFinal" type="button" aria-pressed="${showFinal}">${showFinal ? 'הסתר תשובה סופית' : 'תשובה סופית'}</button>
+    <button class="act full" id="bFull" type="button" aria-pressed="${showFull}">${showFull ? 'הסתר פתרון מלא' : 'פתרון מלא'}</button></div>`;
+  if (showFinal) h += `<section class="panel"><h2>תשובה סופית</h2>${ex.text ? `<div class="final text">${ex.a}</div>` : `<div class="final">\\[${ex.a}\\]</div>`}</section>`;
+  if (showFull) {
+    h += `<section class="panel"><h2>פתרון מלא</h2><ol class="steps">`;
+    ex.s.forEach((st, j) => {
+      const last = j === ex.s.length - 1;
+      h += st[0] === 't' ? `<li>${st[1]}</li>` : `<li><div class="m${last ? ' ans' : ''}">\\[${st[1]}\\]</div></li>`;
+    });
+    h += `</ol></section>`;
+  }
+  board.innerHTML = h;
+  document.getElementById('bFinal').onclick = () => { showFinal = !showFinal; render(); };
+  document.getElementById('bFull').onclick = () => { showFull = !showFull; render(); };
+  prev.disabled = idx === 0;
+  next.disabled = idx === EX.length - 1;
+  count.textContent = `תרגיל ${idx+1} מתוך ${EX.length}`;
+  paintStrip();
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetClear && MathJax.typesetClear([board]);
+    MathJax.typesetPromise([board]).catch(()=>{});
+  }
+}
+function go(i){
+  if (i < 0 || i >= EX.length) return;
+  seen.add(idx);
+  idx = i; showFinal = false; showFull = false;
+  store.set('int-idx', String(idx));
+  store.set('int-seen', JSON.stringify([...seen]));
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+prev.onclick = () => go(idx - 1);
+next.onclick = () => go(idx + 1);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') go(idx + 1);
+  if (e.key === 'ArrowRight') go(idx - 1);
+});
+buildStrip();
+function start(){ render(); }
+if (window.MathJax && MathJax.startup && MathJax.startup.promise) MathJax.startup.promise.then(start);
+else window.addEventListener('load', () => (MathJax.startup ? MathJax.startup.promise.then(start) : start()));
+</script>
+</body>
+</html>
